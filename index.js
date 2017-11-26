@@ -122,6 +122,68 @@ function parse(tokenStream) {
     }
     return {type: 'Program', prog};
   }
+  function parseExpression(scope) {
+    if (isSequenceExpression()) {
+      const expr = parseBinary(parseItem(), 0);
+      return checkMatch(scope, expr);
+    } else if (isIdentifer()) {
+      const identifier = tokenStream.peek();
+      if (identifier.value === 'IF') { // 条件表达式
+        const item = parseItem(true)
+        if (item.type === 'IFExpression') return checkMatch(scope, item);
+        return checkMatch(scope, parseBinary(item, 0))
+      }
+      tokenStream.next();
+      if (isAssign()) { // 声明以及赋值表达式
+        const operator = tokenStream.next();
+        if (operator.type === ':') {
+          const arguments = [];
+          arguments.push(parseLineExpression());
+          while (!tokenStream.eof() && tokenStream.peek().type === ',') {
+            tokenStream.next();
+            arguments.push(parseLineExpression());
+          }
+          return checkMatch(scope, {
+            type: 'SpecialAssignmentExpression',
+            operator,
+            left: identifier,
+            arguments,
+          });
+        }
+        return checkMatch(scope, {
+          type: 'AssignmentExpression',
+          operator,
+          left: identifier,
+          right: parseExpression([
+            'CallExpression', 'Identifier', 'SequenceExpression', 'Number', 'BinaryExpression'
+          ]),
+        });
+      }
+      return checkMatch(scope, parseBinary(identifier, 0));
+    } else if (isNumber()) { // 数字
+      return checkMatch(scope, parseBinary(parseItem(), 0));
+    } else if (isBlock()) {
+      const body = delimited('{', '}', ';', parseExpression);
+      return { type: 'BlockStatement', body };
+    } else {
+      unexpected();
+    }
+  }
+  function parseBinary(left, myPrec) {
+    const hisPrec = isBinaryOperator();
+    if (hisPrec) {
+      if (hisPrec > myPrec) {
+        const operator = tokenStream.next();
+        return parseBinary({
+          type: 'BinaryExpression',
+          operator,
+          left: left,
+          right: parseBinary(parseItem(), hisPrec)
+        }, myPrec);
+      }
+    }
+    return left;
+  }
   function parseItem(IFELES = false) {
     if (isSequenceExpression()) {
       let expr = {
@@ -178,66 +240,16 @@ function parse(tokenStream) {
       unexpected();
     }
   }
-  function parseBinary(left, myPrec) {
-    const hisPrec = isBinaryOperator();
-    if (hisPrec) {
-      if (hisPrec > myPrec) {
-        const operator = tokenStream.next();
-        return parseBinary({
-          type: 'BinaryExpression',
-          operator,
-          left: left,
-          right: parseBinary(parseItem(), hisPrec)
-        }, myPrec);
-      }
-    }
-    return left;
-  }
-  function parseExpression(scope) {
-    if (isSequenceExpression()) {
-      const expr = parseBinary(parseItem(), 0);
-      return checkMatch(scope, expr);
-    } else if (isIdentifer()) {
-      const identifier = tokenStream.peek();
-      if (identifier.value === 'IF') { // 条件表达式
-        const item = parseItem(true)
-        if (item.type === 'IFExpression') return checkMatch(scope, item);
-        return checkMatch(scope, parseBinary(item, 0))
-      }
-      tokenStream.next();
-      if (isAssign()) { // 声明以及赋值表达式
-        const operator = tokenStream.next();
-        if (operator.type === ':') {
-          return checkMatch(scope, {
-            type: 'SpecialAssignmentExpression',
-            operator,
-            left: identifier,
-            right: parseSequenceExpression('', ''),
-          });
-        }
-        return checkMatch(scope, {
-          type: 'AssignmentExpression',
-          operator,
-          left: identifier,
-          right: parseExpression([
-            'CallExpression', 'Identifier', 'SequenceExpression', 'Number', 'BinaryExpression'
-          ]),
-        });
-      }
-      return checkMatch(scope, parseBinary(identifier, 0));
-    } else if (isNumber()) { // 数字
-      return checkMatch(scope, parseBinary(parseItem(), 0));
-    } else {
-      unexpected();
-    }
+  function parseLineExpression() {
+    return parseExpression([
+      'CallExpression', 'Identifier', 'SequenceExpression', 'Number', 'BinaryExpression'
+    ]);
   }
   function parseSequenceExpression(start = '(', stop = ')') {
-    return delimited(
-      start, stop, ',',
-      () => parseExpression([
-        'CallExpression', 'Identifier', 'SequenceExpression', 'Number', 'BinaryExpression'
-      ])
-    );
+    return delimited(start, stop, ',', parseLineExpression);
+  }
+  function isBlock() {
+    return tokenStream.peek() && tokenStream.peek().type === '{';
   }
   function isSequenceExpression() {
     return tokenStream.peek() && tokenStream.peek().type === '(';
@@ -277,7 +289,6 @@ function parse(tokenStream) {
     return a;
   }
   function skip(ch, type = true) {
-    if (ch === '' || ch === undefined || ch === null) return;
     const token = tokenStream.next();
     if (!token || token[type ? 'type' : value] !== ch) {
       tokenStream.croak(`Expecting: "${ch}"`);
@@ -289,8 +300,8 @@ function parse(tokenStream) {
 }
 
 try {
-  const ast = parse(TokenStream(InputStream('a:1,2')))
+  const ast = parse(TokenStream(InputStream('a:1,2; IF(true,1,2);')))
   console.log(ast);
 } catch (error) {
-  console.log(error)
+  console.log(error);
 }
