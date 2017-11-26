@@ -273,7 +273,7 @@ function parse(tokenStream) {
   function isBinaryOperator() {
     const t = tokenStream.peek();
     if (!t) return false;
-    if (isIdentifer()) PRECEDENCE[t.value];
+    if (isIdentifer()) return PRECEDENCE[t.value];
     return PRECEDENCE[t.type];
   }
   function delimited(start, stop, separator, parser) {
