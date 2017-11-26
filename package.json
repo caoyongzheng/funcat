@@ -1,0 +1,10 @@
+{
+  "name": "funcat",
+  "version": "1.0.0",
+  "description": "公式语言解析",
+  "main": "index.js",
+  "repository": "https://github.com/caoyongzheng/funcat.git",
+  "author": "caoyongzheng <15267056106@139.com>",
+  "license": "MIT",
+  "private": true
+}
