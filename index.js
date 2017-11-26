@@ -42,7 +42,7 @@ function TokenStream(inputStream) {
       str += inputStream.next();
     return str;
   }
-  function next() {
+  function readNext() {
     readWhile(isWhitespace);
     if (inputStream.eof()) return null;
     let ch = inputStream.peek();
@@ -50,20 +50,20 @@ function TokenStream(inputStream) {
       inputStream.next();
       if (inputStream.peek() === '/') {
         readWhile(ch => ch !== '\n');
-        return next();
+        return readNext();
       } else if (inputStream.peek() === '*') {
         readWhile(cn => ch !== '*');
         while (!inputStream.eof() && inputStream.peek() !== '/') {
           readWhile(cn => ch !== '*');
         }
-        return next();
+        return readNext();
       } else {
-        currentToken = {type: '/'};
+        return {type: '/'};
       }
     } else if (',;(){}[]'.indexOf(ch) >= 0) { // 标点符号
-      currentToken = {type: inputStream.next()};
+      return {type: inputStream.next()};
     } else if ('+-*/%=&|<>!:'.indexOf(ch) >= 0) { // 操作符
-      currentToken = {
+      return {
         type: readWhile(ch => '+-*/%=&|<>!:'.indexOf(ch) >= 0),
       };
     } else if (isDigit(ch)) { // 
@@ -76,17 +76,21 @@ function TokenStream(inputStream) {
         }
         return isDigit(ch);
       });
-      currentToken = {type: "Number", value: Number(number)};
+      return {type: "Number", value: Number(number)};
     } else if (isLetter(ch)) {
       const identifier = readWhile(ch => isLetter(ch) || '0123456789'.indexOf(ch) >= 0);
-      currentToken = {type: 'Identifier', value: identifier};
+      return {type: 'Identifier', value: identifier};
     } else {
       inputStream.croak("Can't handle character: " + ch);
     }
-    return currentToken;
+  }
+  function next() {
+    const token = currentToken;
+    currentToken = null;
+    return token || readNext();
   }
   function peek() {
-    return currentToken || next();
+    return currentToken || (currentToken = readNext());
   }
   function eof() {
     return inputStream.eof();
@@ -133,8 +137,7 @@ function parse(tokenStream) {
       }
       return expr;
     } else if (isIdentifer()) {
-      const identifier = tokenStream.peek();
-      tokenStream.next();
+      const identifier = tokenStream.next();
       let expr = identifier;
       if (identifier.value === 'IF') {
         if (isSequenceExpression()) {
@@ -148,7 +151,7 @@ function parse(tokenStream) {
           } else if (sequenceExpression.length === 1 && IFELES) {
             return {
               type: 'IFExpression',
-              test: item,
+              test: sequenceExpression,
               consequent: parseExpression(),
               alternate: isElse() ? parseExpression() : null,
             };
@@ -179,8 +182,7 @@ function parse(tokenStream) {
     const hisPrec = isBinaryOperator();
     if (hisPrec) {
       if (hisPrec > myPrec) {
-        const operator = tokenStream.peek();
-        tokenStream.next();
+        const operator = tokenStream.next();
         return parseBinary({
           type: 'BinaryExpression',
           operator,
@@ -204,8 +206,15 @@ function parse(tokenStream) {
       }
       tokenStream.next();
       if (isAssign()) { // 声明以及赋值表达式
-        const operator = tokenStream.peek();
-        tokenStream.next();
+        const operator = tokenStream.next();
+        if (operator.type === ':') {
+          return checkMatch(scope, {
+            type: 'SpecialAssignmentExpression',
+            operator,
+            left: identifier,
+            right: parseSequenceExpression('', ''),
+          });
+        }
         return checkMatch(scope, {
           type: 'AssignmentExpression',
           operator,
@@ -222,9 +231,9 @@ function parse(tokenStream) {
       unexpected();
     }
   }
-  function parseSequenceExpression() {
+  function parseSequenceExpression(start = '(', stop = ')') {
     return delimited(
-      '(', ')', ',',
+      start, stop, ',',
       () => parseExpression([
         'CallExpression', 'Identifier', 'SequenceExpression', 'Number', 'BinaryExpression'
       ])
@@ -240,8 +249,7 @@ function parse(tokenStream) {
     return isIdentifer() && tokenStream.peek().value === 'ELSE';
   }
   function isAssign() {
-    return tokenStream.peek() &&
-      [':', ':='].some(c => tokenStream.peek().type === c);
+    return tokenStream.peek() && [':', ':='].some(c => tokenStream.peek().type === c);
   }
   function isNumber() {
     return tokenStream.peek() && tokenStream.peek().type === 'Number';
@@ -269,10 +277,9 @@ function parse(tokenStream) {
     return a;
   }
   function skip(ch, type = true) {
-    const token = tokenStream.peek();
-    if (token && token[type ? 'type' : value] === ch) {
-      tokenStream.next();
-    } else {
+    if (ch === '' || ch === undefined || ch === null) return;
+    const token = tokenStream.next();
+    if (!token || token[type ? 'type' : value] !== ch) {
       tokenStream.croak(`Expecting: "${ch}"`);
     }
   }
@@ -281,3 +288,9 @@ function parse(tokenStream) {
   }
 }
 
+try {
+  const ast = parse(TokenStream(InputStream('a:1,2')))
+  console.log(ast);
+} catch (error) {
+  console.log(error)
+}
