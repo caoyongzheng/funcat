@@ -1,0 +1,6 @@
+{
+  "rulesDirectory": ["src", "./__tests__"],
+  "rules": {
+    "semicolon": true
+  }
+}

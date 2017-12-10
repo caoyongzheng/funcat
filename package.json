@@ -6,5 +6,30 @@
   "repository": "https://github.com/caoyongzheng/funcat.git",
   "author": "caoyongzheng <15267056106@139.com>",
   "license": "MIT",
-  "private": true
+  "private": true,
+  "scripts": {
+    "lint": "tslint src/*.ts __test__/*.ts",
+    "build": "tsc",
+    "test": "jest --watch"
+  },
+  "devDependencies": {
+    "@types/jest": "^21.1.8",
+    "jest": "^21.2.1",
+    "ts-jest": "^21.2.4",
+    "tslint": "^5.8.0",
+    "typescript": "^2.6.2"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    },
+    "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json"
+    ]
+  }
 }

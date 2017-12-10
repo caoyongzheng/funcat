@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "outDir": "lib",
+    "allowJs": true,
+    "target": "es2015"
+  },
+  "include": [
+    "src/**/*"
+  ]
+}
