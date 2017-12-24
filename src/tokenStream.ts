@@ -1,6 +1,6 @@
 import InputStream from "./inputStream";
 import utils from "./utils/index";
-import {ExpressionType, Token, PunctuationLiteral, OperatorLiteral} from './expression';
+import {ExpressionType, Token} from './expression';
 
 interface PredicateFunc {
   (ch: string, str?:string): boolean;
@@ -35,14 +35,15 @@ export default class TokenStream {
         }
         return this.readNext();
       } else {
-        return {type: ExpressionType.Operator, value: '/'} as OperatorLiteral;
+        return {type: ExpressionType.Operator, value: '/'};
       }
-    } else if (',;(){}'.indexOf(ch) >= 0) { // 标点符号
-      return {type: ExpressionType.Punctuation, value: this.inputStream.next()} as PunctuationLiteral;
-    } else if ('+-*/%=&|<>!:'.indexOf(ch) >= 0) { // 操作符
+    } else if (',;(){}'.indexOf(ch) >= 0) {
+      return {type: ExpressionType.Punctuation, value: this.inputStream.next()};
+    } else if ('+-*/%=&|<>!:'.indexOf(ch) >= 0) {
       return {
-        type: this.readWhile(ch => '+-*/%=&|<>!:'.indexOf(ch) >= 0),
-      } as OperatorLiteral;
+        type: ExpressionType.Operator,
+        value: this.readWhile(ch => '+-*/%=&|<>!:'.indexOf(ch) >= 0),
+      };
     } else if (utils.isDigit(ch)) { // 
       let hasDot = false;
       const number = this.readWhile(ch => {

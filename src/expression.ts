@@ -1,17 +1,15 @@
 export enum ExpressionType {
   Program = 'Program',
-  IFExpression = 'IFExpression',
-  SpecialAssignmentExpression = 'SpecialAssignmentExpression',
-  AssignmentExpression = 'AssignmentExpression',
-  CallExpression = 'CallExpression',
+  Block = 'BlockExpression',
+  IF = 'IFExpression',
+  SpecialAssignment = 'SpecialAssignmentExpression',
+  Assignment = 'AssignmentExpression',
+  Call = 'CallExpression',
   Identifier = 'Identifier',
-  SequenceExpression = 'SequenceExpression',
+  Binary = 'BinaryExpression',
   Number = 'Number',
-  String = 'String',
   Operator = 'Operator',
   Punctuation = 'Punctuation',
-  BinaryExpression = 'BinaryExpression',
-  BlockExpression = 'BlockExpression',
 }
 
 export interface Expression {}
@@ -22,34 +20,34 @@ export interface Program extends Expression {
 }
 
 export interface BinaryExpression extends Expression {
-  type: ExpressionType.BinaryExpression;
-  operator: string;
+  type: ExpressionType.Binary;
+  operator: OperatorLiteral;
   left: AtomExpression;
   right: AtomExpression;
 }
 
 export interface CallExpression extends Expression {
-  type: ExpressionType.CallExpression;
+  type: ExpressionType.Call;
   callee?: CallExpression | Identifier;
   arguments: AtomExpression[];
 }
 
 export interface AssignmentExpression extends Expression {
-  type: ExpressionType.AssignmentExpression;
+  type: ExpressionType.Assignment;
   operator: ':=';
   left: Identifier;
   right: AtomExpression;
 }
 
 export interface SpecialAssignmentExpression extends Expression {
-  type: ExpressionType.SpecialAssignmentExpression;
+  type: ExpressionType.SpecialAssignment;
   operator: ':';
   left: Identifier;
   arguments: AtomExpression[];
 }
 
 export interface IFExpression extends Expression {
-  type: ExpressionType.IFExpression;
+  type: ExpressionType.IF;
   test: AtomExpression;
   consequent: Expression;
   alternate?: Expression;
@@ -66,18 +64,18 @@ export interface NumberLiteral extends Expression {
 }
 
 export interface BlockExpression extends Expression {
-  type: ExpressionType.BlockExpression;
+  type: ExpressionType.Block;
   body: Expression[];
 }
 
 export interface OperatorLiteral {
   type: ExpressionType.Operator;
-  value: '+' | '-' | '*' | '/' | '%' | '||' | '&&' | '>' | '>=' | '<=' | '<' | '=' | '!=' | ':' | ':=';
+  value: string; // '+' | '-' | '*' | '/' | '%' | '||' | '&&' | '>' | '>=' | '<=' | '<' | '=' | '!=' | ':' | ':='
 }
 
 export interface PunctuationLiteral {
   type: ExpressionType.Punctuation;
-  value: ',' | ';' | '(' | ')' | '{' | '}';
+  value: string; // ',' | ';' | '(' | ')' | '{' | '}'
 }
 
 export type AtomExpression = Identifier | NumberLiteral | CallExpression | BinaryExpression;
