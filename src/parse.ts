@@ -10,6 +10,9 @@ import {
   BinaryExpression,
   NumberLiteral,
   OperatorLiteral,
+  SpecialAssignmentExpression,
+  AssignmentExpression,
+  BlockExpression,
 } from './expression';
 
 const PRECEDENCE = {
@@ -24,18 +27,18 @@ const PRECEDENCE = {
 export default function parse(tokenStream: TokenStream): Program {
   return parseProgram();
   function parseProgram(): Program {
-    var program: Expression[] = [];
+    var body: Expression[] = [];
     while (!tokenStream.eof()) {
-      program.push(parseExpression());
+      body.push(parseExpression());
       if (!tokenStream.eof()) skip(';');
     }
-    return { type: ExpressionType.Program, program };
+    return { type: ExpressionType.Program, body};
   }
   function parseExpression(): Expression {
     if (isSequenceExpression()) {
       return mayBeBinary(parseAtom() as AtomExpression, 0);
     } else if (isIdentifer()) {
-      const identifier = tokenStream.peek();
+      const identifier = tokenStream.peek() as Identifier;
       if (identifier.value === 'IF') { // 条件表达式
         return parseAtom(true);
       }
@@ -43,33 +46,30 @@ export default function parse(tokenStream: TokenStream): Program {
       if (isAssign()) { // 声明以及赋值表达式
         const operator = tokenStream.next();
         if (operator.value === ':') {
-          const args = [];
-          args.push(parseAtom());
+          const args:AtomExpression[] = [];
+          args.push(parseAtom() as AtomExpression);
           while (!tokenStream.eof() && tokenStream.peek().value === ',') {
             tokenStream.next();
-            args.push(parseAtom());
+            args.push(parseAtom() as AtomExpression);
           }
-          if (!tokenStream.eof() && tokenStream.next().value !== ';') unexpected();
           return {
             type: ExpressionType.SpecialAssignment,
-            operator,
             left: identifier,
             arguments: args,
-          };
+          } as SpecialAssignmentExpression;
         }
         return {
           type: ExpressionType.Assignment,
-          operator,
           left: identifier,
-          right: parseAtom(),
-        };
+          right: parseAtom() as AtomExpression,
+        } as AssignmentExpression;
       }
-      return mayBeBinary(identifier as Identifier, 0);
+      return mayBeBinary(identifier, 0);
     } else if (isNumber()) { // 数字
       return mayBeBinary(parseAtom() as AtomExpression, 0);
     } else if (isBlock()) {
-      const body = delimited('{', '}', ';', parseExpression);
-      return {type: ExpressionType.Block, body};
+      const body:Expression[] = delimited('{', '}', ';', parseExpression);
+      return {type: ExpressionType.Block, body} as BlockExpression;
     } else {
       unexpected();
     }
@@ -124,9 +124,10 @@ export default function parse(tokenStream: TokenStream): Program {
           unexpected();
         }
       }
+      return mayBeBinary(identifier as Identifier);
     }
     if (isNumber()) {
-      return tokenStream.next() as NumberLiteral;
+      return mayBeBinary(tokenStream.next() as NumberLiteral);
     }
     unexpected();
   }
@@ -167,9 +168,9 @@ export default function parse(tokenStream: TokenStream): Program {
     skip(stop);
     return a;
   }
-  function skip(ch, type = true) {
+  function skip(ch) {
     const token = tokenStream.next();
-    if (!token || token[type ? 'type' : 'value'] !== ch) {
+    if (!token || token.value !== ch) {
       tokenStream.croak(`Expecting: "${ch}"`);
     }
   }

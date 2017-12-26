@@ -54,9 +54,12 @@ export default class TokenStream {
         }
         return utils.isDigit(ch);
       });
-      return { type:ExpressionType.Number, value: Number(number)};
+      return { type:ExpressionType.Number, value: number};
     } else if (utils.isLetter(ch)) {
       const identifier = this.readWhile(ch => utils.isLetter(ch) || '0123456789'.indexOf(ch) >= 0);
+      if (identifier === 'AND' || identifier === 'OR') {
+        return {type: ExpressionType.Operator, value: identifier};
+      }
       return {type: ExpressionType.Identifier, value: identifier};
     } else {
       this.inputStream.croak("Can't handle character: " + ch);

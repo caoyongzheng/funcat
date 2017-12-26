@@ -12,11 +12,13 @@ export enum ExpressionType {
   Punctuation = 'Punctuation',
 }
 
-export interface Expression {}
+export interface Expression {
+  type: ExpressionType;
+}
 
 export interface Program extends Expression {
   type: ExpressionType.Program;
-  program: Expression[];
+  body: Expression[];
 }
 
 export interface BinaryExpression extends Expression {
@@ -34,14 +36,12 @@ export interface CallExpression extends Expression {
 
 export interface AssignmentExpression extends Expression {
   type: ExpressionType.Assignment;
-  operator: ':=';
   left: Identifier;
   right: AtomExpression;
 }
 
 export interface SpecialAssignmentExpression extends Expression {
   type: ExpressionType.SpecialAssignment;
-  operator: ':';
   left: Identifier;
   arguments: AtomExpression[];
 }
@@ -60,7 +60,7 @@ export interface Identifier extends Expression {
 
 export interface NumberLiteral extends Expression {
   type: ExpressionType.Number;
-  value: number;
+  value: string;
 }
 
 export interface BlockExpression extends Expression {
@@ -68,12 +68,12 @@ export interface BlockExpression extends Expression {
   body: Expression[];
 }
 
-export interface OperatorLiteral {
+export interface OperatorLiteral extends Expression {
   type: ExpressionType.Operator;
   value: string; // '+' | '-' | '*' | '/' | '%' | '||' | '&&' | '>' | '>=' | '<=' | '<' | '=' | '!=' | ':' | ':='
 }
 
-export interface PunctuationLiteral {
+export interface PunctuationLiteral extends Expression {
   type: ExpressionType.Punctuation;
   value: string; // ',' | ';' | '(' | ')' | '{' | '}'
 }

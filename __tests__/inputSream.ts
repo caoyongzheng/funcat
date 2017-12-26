@@ -32,7 +32,7 @@ test('inputStream.croak(wrong ch)', () => {
   } catch (error) {
     expect(error).toEqual(new Error('wrong ch (1, 1)'));
   }
-})
+});
 
 test('inputStream.getLocation()', () => {
   const inputStream = new InputStream('1!\n');
@@ -40,4 +40,4 @@ test('inputStream.getLocation()', () => {
   expect(inputStream.getLocation()).toEqual({
     pos: 1, line: 1, column: 1
   });
-})
+});
